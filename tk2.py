@@ -1,18 +1,26 @@
+import tkinter as tk
+from tkinter import messagebox
+import mysql.connector
 import nltk
 from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
 import re
-import mysql.connector
 import matplotlib.pyplot as plt
+
+# Initialize NLTK resources
+nltk.download('punkt')
+nltk.download('stopwords')
+nltk.download('averaged_perceptron_tagger')
+nltk.download('wordnet')
 
 # Phase 1: Resume Analysis and Comparison
 
 def preprocess_text(text):
-    # Tokenization using regular expression to split on word boundaries
-    tokens = re.findall(r'\b\w+\b', text)
-    # Convert tokens to lowercase
-    tokens = [word.lower() for word in tokens]
+    # Tokenization
+    tokens = word_tokenize(text)
+    # Remove punctuation and convert to lowercase
+    tokens = [word.lower() for word in tokens if word.isalpha()]
     # Remove stopwords
     stop_words = set(stopwords.words('english'))
     tokens = [word for word in tokens if word not in stop_words]
@@ -126,51 +134,38 @@ def rank_candidates(cursor):
     ranked_candidates = cursor.fetchall()
     return ranked_candidates
 
-# Main function
-if __name__ == "__main__":
-    mydb = connect_to_database()
-    mycursor = mydb.cursor()
+# Function to handle storing candidate data
+def store_candidate_data():
+    name = name_entry.get()
+    rewards = rewards_entry.get()
+    academic_score = academic_score_entry.get()
+    skills = skills_entry.get()
     
-    # Example usage
-    resume_text = "Experienced software engineer with a passion for coding and problem-solving."
-    keywords = extract_keywords(resume_text)
-    print("Extracted keywords:", keywords)
-    skills = extract_skills(resume_text)
-    print("Extracted skills:", skills)
-    
-    # Create employee table if not exists
-    create_employee_table(mycursor)
-
-    candidate_data_list = []
-
-    while True:
-        # Example candidate data input
-        candidate_name = input("Enter candidate name (or type 'stop' to exit): ")
-        if candidate_name.lower() == 'stop':
-            break
-        candidate_rewards = int(input("Enter candidate rewards: "))
-        candidate_academic_score = float(input("Enter candidate academic score: "))
-        candidate_skills = input("Enter candidate skills (comma-separated): ").split(', ')
+    try:
+        rewards = int(rewards)
+        academic_score = float(academic_score)
+        
+        mydb = connect_to_database()
+        mycursor = mydb.cursor()
 
         # Store candidate data
-        store_employee_data(mycursor, candidate_name, candidate_rewards, candidate_academic_score, candidate_skills)
+        store_employee_data(mycursor, name, rewards, academic_score, skills)
         mydb.commit()
+        mycursor.close()
+        mydb.close()
+        
+        messagebox.showinfo("Success", "Candidate data stored successfully!")
+    except ValueError:
+        messagebox.showerror("Error", "Please enter valid rewards and academic score.")
 
-    compare_option = input("Enter 'just now' to compare candidates just written, or 'all' to compare all candidates in the database: ")
-    if compare_option.lower() == 'just now':
-        # Compare just inputted candidates
-        candidate_data_list = []
-        mycursor.execute("SELECT * FROM employees ORDER BY id DESC LIMIT 0, %s", (len(candidate_data_list),))
-        for row in mycursor.fetchall():
-            candidate_data = {"name": row[1], "rewards": row[2], "academic_score": row[3]}
-            if row[4] is not None:
-                candidate_data["skills"] = row[4].split(', ')
-            else:
-                candidate_data["skills"] = []
-            candidate_data_list.append(candidate_data)
-    elif compare_option.lower() == 'all':
-        # Compare all candidates in the database
-        candidate_data_list = []
+# Function to handle comparing candidates
+def compare_candidate_data():
+    try:
+        mydb = connect_to_database()
+        mycursor = mydb.cursor()
+
+        # Fetch candidate data from the database and perform comparison
+        comparison_result = {}
         mycursor.execute("SELECT * FROM employees")
         for row in mycursor.fetchall():
             candidate_data = {"name": row[1], "rewards": row[2], "academic_score": row[3]}
@@ -178,34 +173,67 @@ if __name__ == "__main__":
                 candidate_data["skills"] = row[4].split(', ')
             else:
                 candidate_data["skills"] = []
-            candidate_data_list.append(candidate_data)
-    else:
-        print("Invalid option!")
+            match_criteria = compare_candidates(mycursor, candidate_data)
+            comparison_result[candidate_data['name']] = match_criteria
 
-    # Compare all candidates with existing employees
-    comparison_scores = {}
-    for candidate_data in candidate_data_list:
-        comparison_result = compare_candidates(mycursor, candidate_data)
-        comparison_scores[candidate_data['name']] = comparison_result
+        # Display the comparison results
+        messagebox.showinfo("Comparison Result", f"Comparison Result:\n{comparison_result}")
 
-    # Generate graph based on comparison scores
-    generate_graph(comparison_scores)
+        # Close the database connection
+        mycursor.close()
+        mydb.close()
+    except Exception as e:
+        messagebox.showerror("Error", f"An error occurred: {e}")
 
-    rank_option = input("Enter 'just now' to rank candidates just written, or 'all' to rank all candidates in the database: ")
-    if rank_option.lower() == 'just now':
-        # Rank just inputted candidates
+# Function to handle ranking candidates
+def rank_candidate_data():
+    try:
+        mydb = connect_to_database()
+        mycursor = mydb.cursor()
+
+        # Fetch candidate data from the database and perform ranking
         ranked_candidates = rank_candidates(mycursor)
-    elif rank_option.lower() == 'all':
-        # Rank all candidates in the database
-        ranked_candidates = rank_candidates(mycursor)
-    else:
-        print("Invalid option!")
 
-    # Print ranked candidates
-    print("Ranked Candidates:")
-    for rank, candidate in enumerate(ranked_candidates, start=1):
-        print(f"{rank}. Name: {candidate[0]}, Rewards: {candidate[1]}, Academic Score: {candidate[2]}")
+        # Display the ranked candidates
+        ranked_candidates_info = "\n".join([f"{rank}. Name: {candidate[0]}, Rewards: {candidate[1]}, Academic Score: {candidate[2]}" for rank, candidate in enumerate(ranked_candidates, start=1)])
+        messagebox.showinfo("Ranked Candidates", f"Ranked Candidates:\n{ranked_candidates_info}")
 
-    # Close the database connection
-    mycursor.close()
-    mydb.close()
+        # Close the database connection
+        mycursor.close()
+        mydb.close()
+    except Exception as e:
+        messagebox.showerror("Error", f"An error occurred: {e}")
+
+# Create the main window
+root = tk.Tk()
+root.title("Candidate Management System")
+
+# Create and place entry fields for candidate data
+tk.Label(root, text="Name:").grid(row=0, column=0)
+name_entry = tk.Entry(root)
+name_entry.grid(row=0, column=1)
+
+tk.Label(root, text="Rewards:").grid(row=1, column=0)
+rewards_entry = tk.Entry(root)
+rewards_entry.grid(row=1, column=1)
+
+tk.Label(root, text="Academic Score:").grid(row=2, column=0)
+academic_score_entry = tk.Entry(root)
+academic_score_entry.grid(row=2, column=1)
+
+tk.Label(root, text="Skills:").grid(row=3, column=0)
+skills_entry = tk.Entry(root)
+skills_entry.grid(row=3, column=1)
+
+# Create and place buttons for actions
+store_button = tk.Button(root, text="Store Candidate Data", command=store_candidate_data)
+store_button.grid(row=4, column=0, columnspan=2, pady=10)
+
+compare_button = tk.Button(root, text="Compare Candidates", command=compare_candidate_data)
+compare_button.grid(row=5, column=0, columnspan=2, pady=10)
+
+rank_button = tk.Button(root, text="Rank Candidates", command=rank_candidate_data)
+rank_button.grid(row=6, column=0, columnspan=2, pady=10)
+
+# Run the main event loop
+root.mainloop()
