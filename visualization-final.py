@@ -254,7 +254,7 @@ def compare_employee_candidate_data():
 
 # Create the main window
 root = tk.Tk()
-root.title("Candidate Management System")
+root.title("TalentTrack")
 
 # Create and place entry fields for job description
 description_label = tk.Label(root, text="Job Description:")
