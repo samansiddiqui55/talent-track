@@ -1,4 +1,5 @@
 # Talent Track
+Designed by Anjali Chaturvedi (22203005) and Vibhu Chaudhary (22203001) of Jaypee Institute of Information Technology 
 ### Description:
 TalentTrack is a Candidate Management System designed to streamline the process of analyzing, storing, and comparing candidate data. It includes features for extracting keywords and skills from resumes, storing candidate information in a MySQL database, and visualizing candidate comparisons using bar charts.
 
