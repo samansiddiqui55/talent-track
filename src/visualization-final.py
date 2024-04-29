@@ -1,4 +1,4 @@
-import tkinter as tk
+import tkinter as tk 
 from tkinter import messagebox
 import mysql.connector
 import nltk
@@ -18,12 +18,9 @@ nltk.download('wordnet')
 def preprocess_text(text):
     # Tokenization
     tokens = word_tokenize(text)
-    # Remove punctuation and convert to lowercase
     tokens = [word for word in tokens if word.isalpha()]
-    # Remove stopwords
     stop_words = set(stopwords.words('english'))
     tokens = [word for word in tokens if word not in stop_words]
-    # Lemmatization
     lemmatizer = WordNetLemmatizer()
     tokens = [lemmatizer.lemmatize(word) for word in tokens]
     return tokens
@@ -224,13 +221,14 @@ def extract_and_compare_candidates(description_entry):
             candidate_name = row[1]
             candidate_skills_str = row[4] if row[4] else ""  # Fetch skills as a string from database
             candidate_skills = [skill.strip() for skill in candidate_skills_str.split(',')]  # Split skills string into a list
-
+        
             # Debugging: Print candidate skills
             print(f"Candidate Skills for {candidate_name}:", candidate_skills)
 
             if any(keyword in candidate_skills for keyword in keywords) or any(skill in candidate_skills for skill in skills):
                 selected_candidates.append(candidate_name)
                 print(f"Selected Candidate: {selected_candidates}")
+    
         if selected_candidates:
             messagebox.showinfo("Selected Candidates", f"Selected candidates: {', '.join(selected_candidates)}")
             print(f"Selected Candidate: {selected_candidates}")
