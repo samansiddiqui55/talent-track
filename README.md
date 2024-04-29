@@ -4,7 +4,7 @@ Designed by Anjali Chaturvedi (22203005) and Vibhu Chaudhary (22203001) of Jaype
 TalentTrack is a Candidate Management System designed to streamline the process of analyzing, storing, and comparing candidate data. It includes features for extracting keywords and skills from resumes, storing candidate information in a MySQL database, and visualizing candidate comparisons using bar charts.
 
 ### Features:
-1. **Resume Analysis:** Automatically extract keywords and skills from candidate resumes.
+1. **Resume Analysis:** Automatically extract keywords and skills from candidate resumes through NLP Toolkit.
 2. **Data Storage:** Store candidate information, including name, rewards, academic score, and skills, in a MySQL database.
 3. **Candidate Comparison:** Compare candidates based on rewards, academic score, and skills, visualizing the results with bar charts.
 4. **User Interface:** Provides a user-friendly interface using Tkinter for easy interaction with the system.
